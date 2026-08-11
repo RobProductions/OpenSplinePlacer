@@ -82,7 +82,7 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 				}
 
 				thisObject.transform.rotation = finalRotation;
-				thisObject.transform.SetParent(holderObject);
+				thisObject.transform.SetParent(holderObject, false);
 			}
 
 			return spawnedObjects;
@@ -128,6 +128,7 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 
 #if UNITY_EDITOR
 			ret = (GameObject)UnityEditor.PrefabUtility.InstantiatePrefab(spawnReference.prefabObject);
+			UnityEditor.Undo.RegisterCreatedObjectUndo(ret, "Created Spline Reference Object");
 #else
 			ret = GameObject.Instantiate(spawnReference.prefabObject);
 #endif
