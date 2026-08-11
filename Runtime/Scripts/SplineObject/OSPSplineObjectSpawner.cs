@@ -129,7 +129,7 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 #if UNITY_EDITOR
 			ret = (GameObject)UnityEditor.PrefabUtility.InstantiatePrefab(spawnReference.prefabObject);
 #else
-		ret = GameObject.Instantiate(spawnReference.prefabObject);
+			ret = GameObject.Instantiate(spawnReference.prefabObject);
 #endif
 
 			return ret;
