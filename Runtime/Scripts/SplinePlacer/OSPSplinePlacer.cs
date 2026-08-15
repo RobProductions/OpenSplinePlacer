@@ -14,7 +14,7 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 		{
 			[Header("Spawning")]
 			public int randomSeedValue = 500;
-			public float additionalContainerPadding = 0.0f;
+			public float additionalObjectSpacing = 0.0f;
 			public bool ignoreDestroyChildrenOnGenerate = false;
 
 			[Header("Limits")]
@@ -163,12 +163,31 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 			float splineUnitLength = splineTarget.GetLength();
 
 			float objectsLengthTraverse = 0.0f;
+			int placeObjectsBeforeConnectorCount = 0;
 			int containerSpawnCount = 0;
 			while(objectsLengthTraverse < splineUnitLength)
 			{
+				//Determine which type of object to spawn
+				OSPSplineObjectSet.SplineObjectContainer[] containerList = splineObjectSet.spawningParams.splineObjectContainers;
+				if(splineObjectSet.spawningParams.objectsBeforeConnectorInterval > 0)
+				{
+					//We should consider connectors
+					if(placeObjectsBeforeConnectorCount >= splineObjectSet.spawningParams.objectsBeforeConnectorInterval)
+					{
+						//This is a connector object
+						placeObjectsBeforeConnectorCount = 0;
+						containerList = splineObjectSet.spawningParams.splineConnectorContainers;
+					}
+					else
+					{
+						//This is a regular object, so increment the count
+						placeObjectsBeforeConnectorCount++;
+					}
+				}
+
 				//Time to spawn a new spline object!
 				//Here we decide which spline object to spawn and its rotation
-				OSPSplineObjectSet.SplineObjectContainer selectedContainer = splineObjectSet.GetRandomSplineObjectContainer(randomClass);
+				OSPSplineObjectSet.SplineObjectContainer selectedContainer = splineObjectSet.GetRandomSplineObjectContainer(containerList, randomClass);
 				OSPSplineObjectSpawner.DetermineSplineObjectRotation(selectedContainer.splineObject, randomClass, 
 					out Quaternion objectModificationRotation, out float finalObjectLength);
 
@@ -190,13 +209,13 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 				//Increase raversal length for next container
 				objectsLengthTraverse += halfObjectLength;
 				objectsLengthTraverse += halfObjectPadding;
-				objectsLengthTraverse += stats.additionalContainerPadding;
+				objectsLengthTraverse += stats.additionalObjectSpacing;
 
 				//Increase spawn count
 				containerSpawnCount++;
 
 				//Fallback break for too many objects
-				if(containerSpawnCount >= stats.maxContainerSpawnCount)
+				if (containerSpawnCount >= stats.maxContainerSpawnCount)
 				{
 					Debug.Log("OSP: Container Spawn limit exceeded! " + stats.maxContainerSpawnCount, gameObject);
 					break;

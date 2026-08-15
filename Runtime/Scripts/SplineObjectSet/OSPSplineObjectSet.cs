@@ -21,9 +21,11 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 		{
 			[Header("Definitions")]
 			public SplineObjectContainer[] splineObjectContainers;
+			public SplineObjectContainer[] splineConnectorContainers;
 
 			[Header("Settings")]
 			public float objectPadding = 0.5f;
+			public int objectsBeforeConnectorInterval = 0;
 		}
 
 		public SplineObjectSetSpawning spawningParams = new SplineObjectSetSpawning();
@@ -34,24 +36,24 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 		/// </summary>
 		/// <param name="randomClass"></param>
 		/// <returns></returns>
-		public SplineObjectContainer GetRandomSplineObjectContainer(System.Random randomClass)
+		public SplineObjectContainer GetRandomSplineObjectContainer(SplineObjectContainer[] containerList, System.Random randomClass)
 		{
-			if(spawningParams.splineObjectContainers.Length <= 0)
+			if(containerList.Length <= 0)
 			{
 				return null;
 			}
 
 			//Sum the probabilities
-			float totalWeight = spawningParams.splineObjectContainers.Sum(container => container.objectProbability);
+			float totalWeight = containerList.Sum(container => container.objectProbability);
 
 			//Get the location of the container to pick
 			float randomFloat = (float)randomClass.NextDouble();
 			float weightSelection = Mathf.Lerp(0.0f, totalWeight, randomFloat);
 
 			//Iterate through containers
-			for(int i = 0; i < spawningParams.splineObjectContainers.Length; i++)
+			for(int i = 0; i < containerList.Length; i++)
 			{
-				var thisContainer = spawningParams.splineObjectContainers[i];
+				var thisContainer = containerList[i];
 				if (weightSelection < thisContainer.objectProbability)
 				{
 					return thisContainer;
@@ -61,7 +63,7 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 			}
 
 			//Fallback in case we hit the end
-			return spawningParams.splineObjectContainers[spawningParams.splineObjectContainers.Length - 1];
+			return containerList[containerList.Length - 1];
 		}
 	}
 }
