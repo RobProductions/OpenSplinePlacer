@@ -8,26 +8,80 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 	public static class OSPSplineObjectSpawner
 	{
 		/// <summary>
-		/// Spawns an object along a spline
+		/// As a preprocess check, we will determine the rotation
+		/// and therefore the final "length" of an object before
+		/// it is spawned in so that we know where to place it on the spline.
+		/// </summary>
+		/// <param name="splineObject"></param>
+		/// <param name="randomClass"></param>
+		/// <param name="objectModificationRotation"></param>
+		/// <param name="finalObjectLength"></param>
+		public static void DetermineSplineObjectRotation(OSPSplineObject splineObject, System.Random randomClass,
+			out Quaternion objectModificationRotation, out float finalObjectLength)
+		{
+			//Set up default values
+			objectModificationRotation = Quaternion.identity;
+			finalObjectLength = splineObject.placementParams.objectLengthZ;
+
+			//Determine the object's modification rotation
+			if(splineObject.placementParams.rotationType == OSPSplineObject.SplineObjectRotationType.DiscreteValues)
+			{
+				if(splineObject.placementParams.possibleRotations.Length > 0)
+				{
+					objectModificationRotation = Quaternion.Euler(splineObject.GetRandomDiscreteRotation(randomClass));
+				}
+				else
+				{
+					Debug.Log("OPSSplineObjectSpawner: Possible Rotations length was 0 in Spline Object placement params in DetermineSplineObjectRotation()!");
+				}
+			}
+			else if (splineObject.placementParams.rotationType == OSPSplineObject.SplineObjectRotationType.RangeValue)
+			{
+				var xRotAmount = (float)randomClass.NextDouble();
+				var xRot = Mathf.Lerp(splineObject.placementParams.rotationXRange.x, splineObject.placementParams.rotationXRange.y, xRotAmount);
+				var yRotAmount = (float)randomClass.NextDouble();
+				var yRot = Mathf.Lerp(splineObject.placementParams.rotationYRange.x, splineObject.placementParams.rotationYRange.y, yRotAmount);
+				var zRotAmount = (float)randomClass.NextDouble();
+				var zRot = Mathf.Lerp(splineObject.placementParams.rotationZRange.x, splineObject.placementParams.rotationZRange.y, zRotAmount);
+
+				objectModificationRotation = Quaternion.Euler(xRot, yRot, zRot);
+			}
+
+			//Determine length from rotation
+			var yModification = FloatMod(objectModificationRotation.eulerAngles.y, 360f);
+			var yModification90Reverse = Mathf.PingPong(yModification, 90f);
+			var yModificationTo90Amount = Mathf.InverseLerp(0f, 90f, yModification90Reverse);
+
+			finalObjectLength = Mathf.Lerp(splineObject.placementParams.objectLengthZ, splineObject.placementParams.objectLengthX, yModificationTo90Amount);
+		}
+
+		/// <summary>
+		/// Spawns an object at a spline location with the given
+		/// holder object and rotation.
 		/// </summary>
 		/// <param name="splineObject"></param>
 		/// <param name="splineCurve"></param>
 		/// <param name="splineTimePoint"></param>
 		/// <param name="randomClass"></param>
-		/// <param name="finalPlacePosition"></param>
+		/// <param name="finalBaseObjectPosition"></param>
 		/// <param name="finalObjectLength"></param>
 		/// <returns></returns>
 		public static List<GameObject> SpawnSplineObjectOnSplinePoint(OSPSplineObject splineObject, Spline splineCurve, float splineTimePoint,
-			Transform holderObject,
-			System.Random randomClass, out Vector3 finalPlacePosition, out float finalObjectLength)
+			Transform holderObject, Quaternion objectModificationRotation, System.Random randomClass, 
+			out Vector3 finalBaseObjectPosition)
 		{
 			//Set up default values
-			finalPlacePosition = Vector3.zero;
-			finalObjectLength = splineObject.placementParams.objectLengthZ;
+			finalBaseObjectPosition = Vector3.zero;
 
 			//Get the curve position and rotation
 			bool evaluateValid = splineCurve.Evaluate(splineTimePoint, out float3 splinePos, out float3 splineTangent, out float3 splineUpVector);
 			Quaternion curveForwardRotation = Quaternion.LookRotation(splineTangent, splineUpVector);
+
+			if(!evaluateValid)
+			{
+				Debug.Log("OPSSplineObjectSpawner: Spline Curve evaluation invalid in SpawnSplineObjectOnPoint()!");
+				return new List<GameObject>();
+			}
 
 			//Spawn the spline object
 			var spawnedObjects = SpawnSplineObject(splineObject, randomClass);
@@ -48,19 +102,8 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 				startRotation = curveForwardRotation;
 			}
 
-			//Set the modification rotation
-			Quaternion modificationRotation = Quaternion.identity;
-			if(splineObject.placementParams.rotationType == OSPSplineObject.SplineObjectRotationType.DiscreteValues)
-			{
-				//TODO: This and also alter the object length based on modification rotation
-				//perhaps based on angle difference between the object (Y axis) and curve
-			}
-
-			//Set the object position
-			//TODO: This
-
 			//Get the final transformation
-			Quaternion finalRotation = startRotation * modificationRotation;
+			Quaternion finalRotation = startRotation * objectModificationRotation;
 			Vector3 finalPosition = splinePos;
 
 			//Set object rotation, position, and parent
@@ -134,6 +177,19 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 #endif
 
 			return ret;
+		}
+
+		//UTILITY
+
+		/// <summary>
+		/// Get the remainder (positive and negative) of a % b.
+		/// </summary>
+		/// <param name="a"></param>
+		/// <param name="b"></param>
+		/// <returns></returns>
+		public static float FloatMod(float a, float b)
+		{
+			return a - (b * Mathf.Floor(a / b));
 		}
 	}
 

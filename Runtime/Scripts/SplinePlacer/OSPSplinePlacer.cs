@@ -1,6 +1,6 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Splines;
-using System.Collections.Generic;
 
 namespace RobProductions.OpenSplinePlacer.Runtime
 {
@@ -33,6 +33,30 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 
 		//USER FUNCTIONS
 
+#if UNITY_EDITOR
+		[UnityEditor.ShortcutManagement.Shortcut("Open Spline Placer/Generate Spline Objects", KeyCode.O, UnityEditor.ShortcutManagement.ShortcutModifiers.Shift)]
+		public static void EditorGenerateSplineObjectsOnChildren()
+		{
+			foreach (GameObject thisObject in UnityEditor.Selection.gameObjects)
+			{
+				var instancingGroups = thisObject.GetComponentsInChildren<OSPSplinePlacer>();
+				foreach (OSPSplinePlacer thisGroup in instancingGroups)
+				{
+					if (!thisGroup.gameObject.activeInHierarchy)
+					{
+						continue;
+					}
+
+					thisGroup.UserGenerateSplineObjects();
+				}
+			}
+		}
+#endif
+
+		/// <summary>
+		/// Start the destruction of children objects
+		/// to clear space for new objects to be generated.
+		/// </summary>
 		[ContextMenu("Destroy Children Objects")]
 		public void UserDestroyChildrenObjects()
 		{
@@ -43,6 +67,11 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 			DestroyChildrenObjects();
 		}
 
+		/// <summary>
+		/// Destroy children objects (if settings permit)
+		/// and start the spline object generation function
+		/// based on the object group and stats set up on this placer component.
+		/// </summary>
 		[ContextMenu("Generate Spline Objects")]
 		public void UserGenerateSplineObjects()
 		{
@@ -137,17 +166,30 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 			int containerSpawnCount = 0;
 			while(objectsLengthTraverse < splineUnitLength)
 			{
+				//Time to spawn a new spline object!
+				//Here we decide which spline object to spawn and its rotation
+				OSPSplineObjectSet.SplineObjectContainer selectedContainer = splineObjectSet.GetRandomSplineObjectContainer(randomClass);
+				OSPSplineObjectSpawner.DetermineSplineObjectRotation(selectedContainer.splineObject, randomClass, 
+					out Quaternion objectModificationRotation, out float finalObjectLength);
+
+				//Define lengths
+				float halfObjectLength = finalObjectLength * 0.5f;
+				float halfObjectPadding = splineObjectSet.spawningParams.objectPadding * 0.5f;
+
+				//Increase traversal by half the object length to get a good starting point
+				objectsLengthTraverse += halfObjectLength;
+				objectsLengthTraverse += halfObjectPadding;
+
 				//Calculate the spline time point via ratio (L + ratio)
 				float splineTimePoint = Mathf.InverseLerp(0.0f, splineUnitLength, objectsLengthTraverse);
 
-				//Time to spawn a new spline object!
-				OSPSplineObjectSet.SplineObjectContainer selectedContainer = splineObjectSet.GetRandomSplineObjectContainer(randomClass);
+				//Then actually spawn the object at the traversal point on the spline
 				List<GameObject> spawnedObjects = OSPSplineObjectSpawner.SpawnSplineObjectOnSplinePoint(selectedContainer.splineObject, splineTarget, splineTimePoint,
-					transform, randomClass, out Vector3 finalPlacePosition, out float finalObjectLength);
+					transform, objectModificationRotation, randomClass, out Vector3 finalBaseObjectPosition);
 
 				//Increase raversal length for next container
-				objectsLengthTraverse += finalObjectLength;
-				objectsLengthTraverse += splineObjectSet.spawningParams.objectPadding;
+				objectsLengthTraverse += halfObjectLength;
+				objectsLengthTraverse += halfObjectPadding;
 				objectsLengthTraverse += stats.additionalContainerPadding;
 
 				//Increase spawn count

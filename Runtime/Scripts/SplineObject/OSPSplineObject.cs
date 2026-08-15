@@ -1,3 +1,4 @@
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Splines;
 
@@ -39,8 +40,9 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 
 		public enum SplineObjectRotationType
 		{
-			DiscreteValues = 0,
-			RangeValue = 1,
+			None = 0,
+			DiscreteValues = 1,
+			RangeValue = 2,
 		}
 
 		public enum SplineObjectRotationSpace
@@ -48,6 +50,16 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 			LocalToSplineDirection = 0,
 			LocalToHolderObject = 1,
 			Global = 2,
+		}
+
+		[System.Serializable]
+		public class SplineObjectWeightedDiscreteRotation
+		{
+			[Header("Rotation")]
+			public Vector3 rotationEuler;
+
+			[Header("Settings")]
+			public float rotationProbability = 100f;
 		}
 
 		[System.Serializable]
@@ -61,12 +73,49 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 			public SplineObjectRotationType rotationType = SplineObjectRotationType.DiscreteValues;
 			public SplineObjectRotationSpace rotationSpace = SplineObjectRotationSpace.LocalToSplineDirection;
 
-			public Vector3[] possibleRotations;
+			public SplineObjectWeightedDiscreteRotation[] possibleRotations;
 			public Vector2 rotationXRange = new Vector2(0.0f, 360.0f);
 			public Vector2 rotationYRange = new Vector2(0.0f, 360.0f);
 			public Vector2 rotationZRange = new Vector2(0.0f, 360.0f);
 		}
 
 		public SplineObjectPlacementParams placementParams;
+
+		/// <summary>
+		/// Return a random discrete rotation possibility
+		/// based on the weight using the provided random class.
+		/// </summary>
+		/// <param name="randomClass"></param>
+		/// <returns></returns>
+		public Vector3 GetRandomDiscreteRotation(System.Random randomClass)
+		{
+			if (placementParams.possibleRotations.Length <= 0)
+			{
+				Debug.Log("OSPSplineObject: Discrete Rotation possibilities list was length 0 in GetRandomDiscreteRotation()!");
+				return Vector3.zero;
+			}
+
+			//Sum the probabilities
+			float totalWeight = placementParams.possibleRotations.Sum(container => container.rotationProbability);
+
+			//Get the location of the rotation to pick
+			float randomFloat = (float)randomClass.NextDouble();
+			float weightSelection = Mathf.Lerp(0.0f, totalWeight, randomFloat);
+
+			//Iterate through rotations
+			for (int i = 0; i < placementParams.possibleRotations.Length; i++)
+			{
+				var thisContainer = placementParams.possibleRotations[i];
+				if (weightSelection < thisContainer.rotationProbability)
+				{
+					return thisContainer.rotationEuler;
+				}
+
+				weightSelection -= thisContainer.rotationProbability;
+			}
+
+			//Fallback in case we hit the end
+			return placementParams.possibleRotations[placementParams.possibleRotations.Length - 1].rotationEuler;
+		}
 	}
 }
