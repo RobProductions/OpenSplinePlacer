@@ -26,6 +26,8 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 			[Header("Settings")]
 			public float objectPadding = 0.5f;
 			public int objectsBeforeConnectorInterval = 0;
+			public bool connectorFirst = false;
+			public bool avoidEndOnConnector = true;
 		}
 
 		public SplineObjectSetSpawning spawningParams = new SplineObjectSetSpawning();

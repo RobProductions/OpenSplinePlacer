@@ -162,21 +162,30 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 			//Traverse the spline and spawn objects along it
 			float splineUnitLength = splineTarget.GetLength();
 
+			bool useConnector = splineObjectSet.spawningParams.objectsBeforeConnectorInterval > 0;
+
+			bool lastObjectWasConnector = false;
+			List<GameObject> lastSpawnedObjects = new List<GameObject>();
+
 			float objectsLengthTraverse = 0.0f;
 			int placeObjectsBeforeConnectorCount = 0;
 			int containerSpawnCount = 0;
-			while(objectsLengthTraverse < splineUnitLength)
+
+			while (objectsLengthTraverse < splineUnitLength)
 			{
 				//Determine which type of object to spawn
 				OSPSplineObjectSet.SplineObjectContainer[] containerList = splineObjectSet.spawningParams.splineObjectContainers;
-				if(splineObjectSet.spawningParams.objectsBeforeConnectorInterval > 0)
+				if(useConnector)
 				{
 					//We should consider connectors
-					if(placeObjectsBeforeConnectorCount >= splineObjectSet.spawningParams.objectsBeforeConnectorInterval)
+					bool firstSpawn = (containerSpawnCount == 0);
+					if(placeObjectsBeforeConnectorCount >= splineObjectSet.spawningParams.objectsBeforeConnectorInterval 
+						|| (firstSpawn && splineObjectSet.spawningParams.connectorFirst))
 					{
 						//This is a connector object
 						placeObjectsBeforeConnectorCount = 0;
 						containerList = splineObjectSet.spawningParams.splineConnectorContainers;
+						lastObjectWasConnector = true;
 					}
 					else
 					{
@@ -201,9 +210,16 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 
 				//Calculate the spline time point via ratio (L + ratio)
 				float splineTimePoint = Mathf.InverseLerp(0.0f, splineUnitLength, objectsLengthTraverse);
+				if(splineTimePoint >= 1f)
+				{
+					//We exceeded the length of the spline
+					//by increasing to half object length, so the next object
+					//won't fit within the curve
+					break;
+				}
 
 				//Then actually spawn the object at the traversal point on the spline
-				List<GameObject> spawnedObjects = OSPSplineObjectSpawner.SpawnSplineObjectOnSplinePoint(selectedContainer.splineObject, splineTarget, splineTimePoint,
+				lastSpawnedObjects = OSPSplineObjectSpawner.SpawnSplineObjectOnSplinePoint(selectedContainer.splineObject, splineTarget, splineTimePoint,
 					transform, objectModificationRotation, randomClass, out Vector3 finalBaseObjectPosition);
 
 				//Increase raversal length for next container
@@ -219,6 +235,15 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 				{
 					Debug.Log("OSP: Container Spawn limit exceeded! " + stats.maxContainerSpawnCount, gameObject);
 					break;
+				}
+			}
+
+			//If we shouldn't end on connector, destroy the last one
+			if(lastObjectWasConnector && splineObjectSet.spawningParams.avoidEndOnConnector)
+			{
+				for(int i = lastSpawnedObjects.Count - 1; i >= 0; i--)
+				{
+					PlacerDestroyObject(lastSpawnedObjects[i]);
 				}
 			}
 
