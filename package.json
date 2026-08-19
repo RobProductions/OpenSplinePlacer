@@ -1,6 +1,6 @@
 {
 	"name": "com.robproductions.opensplineplacer",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"displayName": "OpenSplinePlacer",
 	"description": "An open-source Unity level design tool that can create city blocks, roads, and other lines of objects via Splines.",
 	"unity": "6000.3",
