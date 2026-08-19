@@ -1,0 +1,20 @@
+{
+	"name": "com.robproductions.opensplineplacer",
+	"version": "0.1.0",
+	"displayName": "OpenSplinePlacer",
+	"description": "An open-source Unity level design tool that can create city blocks, roads, and other lines of objects via Splines.",
+	"unity": "6000.3",
+	"changelogUrl": "https://github.com/RobProductions/OpenSplinePlacer",
+	"licensesUrl": "https://github.com/RobProductions/OpenSplinePlacer/blob/main/LICENSE",
+	"license": "MIT License",
+	"keywords": [
+		"spline",
+		"level",
+		"placement",
+		"object"
+	],
+	"author": {
+		"name": "RobProductions",
+		"url": "https://github.com/RobProductions"
+	}
+}
