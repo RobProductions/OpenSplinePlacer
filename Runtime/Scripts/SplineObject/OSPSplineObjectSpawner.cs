@@ -157,6 +157,30 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 				}
 			}
 
+			//Spawn the support objects
+			foreach(OSPSplineObject.SplineObjectSupportReference supportRef in splineObject.spawningParams.supportReferences)
+			{
+				var supportObjects = SpawnSplineObjectSupport(supportRef, basePosition, baseRotation);
+				ret.AddRange(supportObjects);
+			}
+
+			return ret;
+		}
+
+
+		private static List<GameObject> SpawnSplineObjectSupport(OSPSplineObject.SplineObjectSupportReference supportReference,
+			Vector3 basePosition, Quaternion baseRotation)
+		{
+			var ret = new List<GameObject>();
+
+			//Spawn the beam object
+			var offsetPosition = basePosition + (baseRotation * supportReference.beamOffsetPositionFromBase);
+			var offsetRotation = baseRotation * Quaternion.Euler(supportReference.beamOffsetRotationFromBase);
+			ret.Add(SpawnReferenceObject(supportReference.supportBeamReference, offsetPosition, offsetRotation));
+
+			//Spawn the support base object
+			//TODO: This
+
 			return ret;
 		}
 

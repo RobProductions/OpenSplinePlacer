@@ -34,6 +34,20 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 		}
 
 		[System.Serializable]
+		public class SplineObjectSupportReference
+		{
+			[Header("References")]
+			public SplineObjectSpawnReference supportBeamReference;
+
+			[Header("Settings")]
+			public Vector3 beamOffsetPositionFromBase = Vector3.zero;
+			public Vector3 beamOffsetRotationFromBase = Vector3.zero;
+
+			public Vector3 supportDirection = Vector3.down;
+			public LayerMask supportRaycastMask;
+		}
+
+		[System.Serializable]
 		public class SplineObjectSpawningParams
 		{
 			[Header("Base")]
@@ -46,6 +60,9 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 
 			public Vector2Int stackCountRange = new Vector2Int(0, 2);
 			public float useTopBaseProbability = 1.0f;
+
+			[Header("Supports")]
+			public SplineObjectSupportReference[] supportReferences;
 		}
 
 		public SplineObjectSpawningParams spawningParams;
