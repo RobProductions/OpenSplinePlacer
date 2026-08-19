@@ -145,25 +145,64 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 			if(splineObject.spawningParams.stackType != OSPSplineObject.SplineObjectStackType.None)
 			{
 				//Use a random number of stack objects
-				int stackCount = randomClass.Next(splineObject.spawningParams.stackCountRange.x, splineObject.spawningParams.stackCountRange.y + 1);
-				for(int i = 0; i < stackCount; i++)
+				if(splineObject.spawningParams.stackCountRange.x < 0 || splineObject.spawningParams.stackCountRange.y < 0)
 				{
-					var stackReferenceSelection = splineObject.GetRandomSpawnReference(splineObject.spawningParams.stackReferenceVariations, randomClass);
+					Debug.Log("OSPSplineObjectSpawner: stackCountRange component was less than 0! " + splineObject.spawningParams.stackCountRange.ToString());
+					return ret;
+				}
 
-					Vector3 newStackObjectPos = basePosition + (baseRotation * new Vector3(0f, stackHeightFromBase, 0f));
-					ret.Add(SpawnReferenceObject(stackReferenceSelection, newStackObjectPos, baseRotation));
+				int stackCount = randomClass.Next(splineObject.spawningParams.stackCountRange.x, splineObject.spawningParams.stackCountRange.y + 1);
+				if(splineObject.spawningParams.stackReferenceVariations != null)
+				{
+					if(splineObject.spawningParams.stackReferenceVariations.Length > 0)
+					{
+						for (int i = 0; i < stackCount; i++)
+						{
+							var stackReferenceSelection = splineObject.GetRandomSpawnReference(splineObject.spawningParams.stackReferenceVariations, randomClass);
 
-					stackHeightFromBase += stackReferenceSelection.stackHeightFromOrigin;
+							Vector3 newStackObjectPos = basePosition + (baseRotation * new Vector3(0f, stackHeightFromBase, 0f));
+							ret.Add(SpawnReferenceObject(stackReferenceSelection, newStackObjectPos, baseRotation));
+
+							stackHeightFromBase += stackReferenceSelection.stackHeightFromOrigin;
+						}
+					}
+				}
+				else
+				{
+					Debug.Log("OSPSplineObjectSpawner: StackType was != None yet stack references was null in SpawnSplineObject()!");
+				}
+
+				//Check if we should use top reference
+				float topReferenceValue = (float)randomClass.NextDouble();
+				if(topReferenceValue <= splineObject.spawningParams.useTopReferenceProbability)
+				{
+					//We should spawn a top object
+					if(splineObject.spawningParams.topReferenceVariations != null && splineObject.spawningParams.topReferenceVariations.Length > 0)
+					{
+						var topReferenceSelection = splineObject.GetRandomSpawnReference(splineObject.spawningParams.topReferenceVariations, randomClass);
+
+						Vector3 topStackObjectPos = basePosition + (baseRotation * new Vector3(0f, stackHeightFromBase, 0f));
+						ret.Add(SpawnReferenceObject(topReferenceSelection, topStackObjectPos, baseRotation));
+
+						stackHeightFromBase += topReferenceSelection.stackHeightFromOrigin;
+					}
 				}
 			}
 
 			//Spawn the support objects
-			if(splineObject.spawningParams.supportReferences != null)
+			if(splineObject.spawningParams.supportsType != OSPSplineObject.SplineObjectSupportsType.None)
 			{
-				foreach (OSPSplineObject.SplineObjectSupportReference supportRef in splineObject.spawningParams.supportReferences)
+				if (splineObject.spawningParams.supportReferences != null)
 				{
-					var supportObjects = SpawnSplineObjectSupport(supportRef, basePosition, baseRotation);
-					ret.AddRange(supportObjects);
+					foreach (OSPSplineObject.SplineObjectSupportReference supportRef in splineObject.spawningParams.supportReferences)
+					{
+						var supportObjects = SpawnSplineObjectSupport(supportRef, basePosition, baseRotation);
+						ret.AddRange(supportObjects);
+					}
+				}
+				else
+				{
+					Debug.Log("OSPSplineObjectSpawner: SupportsType was not None yet support references was null in SpawnSplineObject()!");
 				}
 			}
 

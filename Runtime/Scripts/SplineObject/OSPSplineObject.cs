@@ -33,6 +33,13 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 			StackCount = 1,
 		}
 
+		public enum SplineObjectSupportsType
+		{
+			None = 0,
+			AllSupports = 1,
+		}
+		//TODO: Could eventually support picking a random support
+
 		[System.Serializable]
 		public class SplineObjectSupportReference
 		{
@@ -56,6 +63,7 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 			public LayerMask supportBaseRaycastMask;
 
 			public Vector3 supportBaseRelativeOffsetPosition = Vector3.zero;
+			[Range(0f, 1f)]
 			public float supportBaseMatchGroundRotationAmount = 0.5f;
 		}
 
@@ -71,9 +79,11 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 			public SplineObjectSpawnReference[] topReferenceVariations;
 
 			public Vector2Int stackCountRange = new Vector2Int(0, 2);
-			public float useTopBaseProbability = 1.0f;
+			[Range(0f, 1f)]
+			public float useTopReferenceProbability = 1.0f;
 
 			[Header("Supports")]
+			public SplineObjectSupportsType supportsType = SplineObjectSupportsType.None;
 			public SplineObjectSupportReference[] supportReferences;
 		}
 
