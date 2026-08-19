@@ -9,15 +9,21 @@ Start by creating `OSPSplineObject` scriptable objects in your assets to define 
 
 You must also create an `OSPSplineObjectSet` scriptable object which will define what **Spline Objects** can appear when you run the placer generation. Each object is assigned to a **Spline Object Container** which also contains a probability value. This value determines how likely it is that the object will spawn relative to the other items in the list.
 
-### OSP Placement
+### OSP Object Generation
 
 After creating a spline with Unity Splines, you will have a GameObject with the `SplineContainer` component in your scene. Add the `OSPSplinePlacer` component to this object. Now you can assign the `OSPSplineObjectSet` that defines the spawn parameters to this placer object. You can also configure parameters for the placer object such as the random seed to vary the final output.
 
+The `maxContainerSpawnCount` variable acts as a safeguard for preventing too many objects from being spawned on each spline. This can happen easily when using negative spacing values, as a negative value will stop the traversal algorithm from progressing down the spline at all, leading to infinite objects being spawned.
+
 When ready, you can right click the component and run **Generate Spline Objects** to start the generation. Alternatively, you can use the registered shortcut (*Shift+O* by default) to start generating as well. The objects will become children of the main placer object.
 
-**NOTE:** Each time you generate spline objects, all of the placer's children objects will be destroyed before the new objects are spawned.
+> **NOTE:** Each time you generate spline objects, all of the placer's children objects will be destroyed before the new objects are spawned.
 
 If all went well, you will now see your created prefab objects positioned along the spline!
+
+### OSP API
+
+If you want to control OpenSplinePlacer's generation via code, you can call the public methods on an `OSPSplinePlacer` object. Call `UserGenerateSplineObjects()` on the component to start the generation. If you just want to run the deletion of children objects to clear out previously spawned items, call `UserDestroyChildrenObjects()`. At runtime, objects will still be spawned along the spline as normal but lose their Prefab link as all objects do once Play mode begins.
 
 ## Installation
 
@@ -26,6 +32,7 @@ If all went well, you will now see your created prefab objects positioned along 
 The following packages are required for OpenSplinePlacer to work correctly:
 
 - UnityEngine.Splines
+- UnityEngine.Mathematics
 
 OpenSplinePlacer was created with Unity 6.3.8f1, though it will likely work in earlier versions of Unity too so long as they support Unity Splines.
 

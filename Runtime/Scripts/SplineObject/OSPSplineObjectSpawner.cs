@@ -280,8 +280,15 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 			//Spawn the object differently depending on Editor mode
 			//so we keep the Prefab link for future changes
 #if UNITY_EDITOR
-			ret = (GameObject)UnityEditor.PrefabUtility.InstantiatePrefab(spawnReference.prefabObject);
-			UnityEditor.Undo.RegisterCreatedObjectUndo(ret, "Created Spline Reference Object");
+			if(Application.isPlaying)
+			{
+				ret = GameObject.Instantiate(spawnReference.prefabObject);
+			}
+			else
+			{
+				ret = (GameObject)UnityEditor.PrefabUtility.InstantiatePrefab(spawnReference.prefabObject);
+				UnityEditor.Undo.RegisterCreatedObjectUndo(ret, "Created Spline Reference Object");
+			}
 #else
 			ret = GameObject.Instantiate(spawnReference.prefabObject);
 #endif

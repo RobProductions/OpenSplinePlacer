@@ -74,7 +74,10 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 		public void UserDestroyChildrenObjects()
 		{
 #if UNITY_EDITOR
-			UnityEditor.Undo.RegisterCompleteObjectUndo(gameObject, "Spline Placer: Destroy Children Objects");
+			if (!Application.isPlaying)
+			{
+				UnityEditor.Undo.RegisterCompleteObjectUndo(gameObject, "Spline Placer: Destroy Children Objects");
+			}
 #endif
 
 			DestroyChildrenObjects();
@@ -89,7 +92,10 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 		public void UserGenerateSplineObjects()
 		{
 #if UNITY_EDITOR
-			UnityEditor.Undo.RegisterCompleteObjectUndo(gameObject, "Spline Placer: Generate Spline Objects");
+			if(!Application.isPlaying)
+			{
+				UnityEditor.Undo.RegisterCompleteObjectUndo(gameObject, "Spline Placer: Generate Spline Objects");
+			}
 #endif
 
 			if(!stats.ignoreDestroyChildrenOnGenerate)
@@ -116,7 +122,14 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 		void PlacerDestroyObject(GameObject objectToDestroy)
 		{
 #if UNITY_EDITOR
-			UnityEditor.Undo.DestroyObjectImmediate(objectToDestroy);
+			if (Application.isPlaying)
+			{
+				Destroy(objectToDestroy);
+			}
+			else
+			{
+				UnityEditor.Undo.DestroyObjectImmediate(objectToDestroy);
+			}
 #else
 			Destroy(objectToDestroy);
 #endif
