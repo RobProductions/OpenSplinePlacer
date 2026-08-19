@@ -6,7 +6,7 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 {
 	public class OSPSplinePlacer : MonoBehaviour
 	{
-		public SplineContainer splineContainer;
+		private SplineContainer splineContainer;
 		public OSPSplineObjectSet splineObjectSet;
 
 		[System.Serializable]
@@ -29,6 +29,19 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 		void Awake()
 		{
 
+		}
+
+		//INIT
+
+		/// <summary>
+		/// Get needed references for placer operations.
+		/// </summary>
+		void TryGatherReferences()
+		{
+			if(splineContainer == null)
+			{
+				splineContainer = GetComponent<SplineContainer>();
+			}
 		}
 
 		//USER FUNCTIONS
@@ -118,7 +131,10 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 		/// </summary>
 		void GenerateSplineContainerObjects()
 		{
-			if(splineContainer == null)
+			//Attempt to initialize needed references
+			TryGatherReferences();
+
+			if (splineContainer == null)
 			{
 				Debug.Log("OSP: Spline Container was null in GenerateSplineObjects()!", gameObject);
 				return;
@@ -244,6 +260,7 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 				for(int i = lastSpawnedObjects.Count - 1; i >= 0; i--)
 				{
 					PlacerDestroyObject(lastSpawnedObjects[i]);
+					containerSpawnCount--;
 				}
 			}
 

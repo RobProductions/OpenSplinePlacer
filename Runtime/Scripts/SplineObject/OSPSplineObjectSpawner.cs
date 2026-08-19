@@ -1,7 +1,7 @@
-using UnityEngine;
 using System.Collections.Generic;
-using UnityEngine.Splines;
 using Unity.Mathematics;
+using UnityEngine;
+using UnityEngine.Splines;
 
 namespace RobProductions.OpenSplinePlacer.Runtime
 {
@@ -74,7 +74,7 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 			finalBaseObjectPosition = Vector3.zero;
 
 			//Get the curve position and rotation
-			bool evaluateValid = splineCurve.Evaluate(splineTimePoint, out float3 splinePos, out float3 splineTangent, out float3 splineUpVector);
+			bool evaluateValid = splineCurve.Evaluate(splineTimePoint, out float3 localSplinePos, out float3 splineTangent, out float3 splineUpVector);
 			Quaternion curveForwardRotation = Quaternion.LookRotation(splineTangent, splineUpVector);
 
 			if(!evaluateValid)
@@ -96,7 +96,7 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 
 			//Get the final transformation
 			Quaternion finalRotation = startRotation * objectModificationRotation;
-			Vector3 finalPosition = splinePos;
+			Vector3 finalPosition = holderObject.TransformPoint(localSplinePos);
 
 			//Spawn the spline object
 			var spawnedObjects = SpawnSplineObject(splineObject, finalPosition, finalRotation, randomClass);
@@ -109,7 +109,7 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 			//Assign the parent to the spawned objects
 			foreach(GameObject spawnedObject in spawnedObjects)
 			{
-				spawnedObject.transform.SetParent(holderObject, false);
+				spawnedObject.transform.SetParent(holderObject, true);
 			}
 
 			return spawnedObjects;
@@ -158,28 +158,71 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 			}
 
 			//Spawn the support objects
-			foreach(OSPSplineObject.SplineObjectSupportReference supportRef in splineObject.spawningParams.supportReferences)
+			if(splineObject.spawningParams.supportReferences != null)
 			{
-				var supportObjects = SpawnSplineObjectSupport(supportRef, basePosition, baseRotation);
-				ret.AddRange(supportObjects);
+				foreach (OSPSplineObject.SplineObjectSupportReference supportRef in splineObject.spawningParams.supportReferences)
+				{
+					var supportObjects = SpawnSplineObjectSupport(supportRef, basePosition, baseRotation);
+					ret.AddRange(supportObjects);
+				}
 			}
 
 			return ret;
 		}
 
-
+		/// <summary>
+		/// Creates the support objects for this spline by spawning in the beam
+		/// and using raycasts to find any intersection points.
+		/// A support base object can spawn at the ray hit location
+		/// or at the end of the raycast based on length settings.
+		/// </summary>
+		/// <param name="supportReference"></param>
+		/// <param name="basePosition"></param>
+		/// <param name="baseRotation"></param>
+		/// <returns></returns>
 		private static List<GameObject> SpawnSplineObjectSupport(OSPSplineObject.SplineObjectSupportReference supportReference,
 			Vector3 basePosition, Quaternion baseRotation)
 		{
 			var ret = new List<GameObject>();
 
+			//First check for raycast hit
+			Vector3 supportRaycastDirection = supportReference.supportBaseRaycastDirection;
+			if(!supportReference.supportBaseRaycastWorldDirection)
+			{
+				supportRaycastDirection = baseRotation * supportReference.supportBaseRaycastDirection;
+			}
+
+			RaycastHit rayHitInfo;
+			bool didHitGround = Physics.SphereCast(basePosition, supportReference.supportBaseRaycastRadius, supportRaycastDirection,
+				out rayHitInfo, supportReference.supportBaseRaycastLength, supportReference.supportBaseRaycastMask);
+
 			//Spawn the beam object
 			var offsetPosition = basePosition + (baseRotation * supportReference.beamOffsetPositionFromBase);
 			var offsetRotation = baseRotation * Quaternion.Euler(supportReference.beamOffsetRotationFromBase);
-			ret.Add(SpawnReferenceObject(supportReference.supportBeamReference, offsetPosition, offsetRotation));
+
+			if (!supportReference.supportBeamReference.IsPrefabNull() && (didHitGround || !supportReference.ignoreBeamIfNoRaycastHit))
+			{
+				ret.Add(SpawnReferenceObject(supportReference.supportBeamReference, offsetPosition, offsetRotation));
+			}
 
 			//Spawn the support base object
-			//TODO: This
+			Vector3 supportBasePosition = basePosition + (supportRaycastDirection * supportReference.supportBaseRaycastLength);
+			Quaternion supportBaseRotation = baseRotation;
+			if(didHitGround)
+			{
+				//If we hit the ground, we should align the support base to the hit point
+				Vector3 forwardOnPlane = Vector3.ProjectOnPlane(baseRotation.eulerAngles, rayHitInfo.normal);
+				Quaternion groundRotation = Quaternion.LookRotation(forwardOnPlane, rayHitInfo.normal);
+				supportBaseRotation = Quaternion.Slerp(baseRotation, groundRotation, supportReference.supportBaseMatchGroundRotationAmount);
+
+				supportBasePosition = rayHitInfo.point;
+			}
+			supportBasePosition += baseRotation * supportReference.supportBaseRelativeOffsetPosition;
+
+			if(!supportReference.supportBaseReference.IsPrefabNull() && (didHitGround || !supportReference.ignoreSupportBaseIfNoRaycastHit))
+			{
+				ret.Add(SpawnReferenceObject(supportReference.supportBaseReference, supportBasePosition, supportBaseRotation));
+			}
 
 			return ret;
 		}

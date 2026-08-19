@@ -38,13 +38,25 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 		{
 			[Header("References")]
 			public SplineObjectSpawnReference supportBeamReference;
+			public SplineObjectSpawnReference supportBaseReference;
 
-			[Header("Settings")]
+			[Header("Support Settings")]
+			public bool ignoreBeamIfNoRaycastHit = false;
+			public bool ignoreSupportBaseIfNoRaycastHit = false;
+
+			[Header("Beam Settings")]
 			public Vector3 beamOffsetPositionFromBase = Vector3.zero;
 			public Vector3 beamOffsetRotationFromBase = Vector3.zero;
 
-			public Vector3 supportDirection = Vector3.down;
-			public LayerMask supportRaycastMask;
+			[Header("Support Base Settings")]
+			public bool supportBaseRaycastWorldDirection = false;
+			public Vector3 supportBaseRaycastDirection = Vector3.down;
+			public float supportBaseRaycastLength = 10f;
+			public float supportBaseRaycastRadius = 1.0f;
+			public LayerMask supportBaseRaycastMask;
+
+			public Vector3 supportBaseRelativeOffsetPosition = Vector3.zero;
+			public float supportBaseMatchGroundRotationAmount = 0.5f;
 		}
 
 		[System.Serializable]
@@ -65,7 +77,7 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 			public SplineObjectSupportReference[] supportReferences;
 		}
 
-		public SplineObjectSpawningParams spawningParams;
+		public SplineObjectSpawningParams spawningParams = new SplineObjectSpawningParams();
 
 		public enum SplineObjectRotationType
 		{
@@ -108,7 +120,7 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 			public Vector2 rotationZRange = new Vector2(0.0f, 360.0f);
 		}
 
-		public SplineObjectPlacementParams placementParams;
+		public SplineObjectPlacementParams placementParams = new SplineObjectPlacementParams();
 
 		/// <summary>
 		/// Return a random discrete rotation possibility
