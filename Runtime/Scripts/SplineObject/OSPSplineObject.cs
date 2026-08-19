@@ -10,7 +10,12 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 		[System.Serializable]
 		public class SplineObjectSpawnReference
 		{
+			[Header("Prefab")]
 			public GameObject prefabObject;
+
+			[Header("Settings")]
+			public float objectProbability = 100f;
+			public float stackHeightFromOrigin = 10f;
 
 			/// <summary>
 			/// Returns true if the prefabObject is null on this reference.
@@ -22,6 +27,12 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 			}
 		}
 
+		public enum SplineObjectStackType
+		{
+			None = 0,
+			StackCount = 1,
+		}
+
 		[System.Serializable]
 		public class SplineObjectSpawningParams
 		{
@@ -29,6 +40,7 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 			public SplineObjectSpawnReference baseSpawnReference;
 
 			[Header("Stacks")]
+			public SplineObjectStackType stackType = SplineObjectStackType.None;
 			public SplineObjectSpawnReference[] stackReferenceVariations;
 			public SplineObjectSpawnReference[] topReferenceVariations;
 
@@ -116,6 +128,44 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 
 			//Fallback in case we hit the end
 			return placementParams.possibleRotations[placementParams.possibleRotations.Length - 1].rotationEuler;
+		}
+
+		/// <summary>
+		/// Returns a random spawn reference within the given list
+		/// based on weighted probability.
+		/// </summary>
+		/// <param name="spawnReferenceList"></param>
+		/// <param name="randomClass"></param>
+		/// <returns></returns>
+		public SplineObjectSpawnReference GetRandomSpawnReference(SplineObjectSpawnReference[] spawnReferenceList, System.Random randomClass)
+		{
+			if(spawnReferenceList.Length <= 0)
+			{
+				Debug.Log("OSPSplineObject: Spawn Reference List length was 0 in GetRandomSpawnReference()!");
+				return null;
+			}
+
+			//Sum the probabilities
+			float totalWeight = spawnReferenceList.Sum(spawnReference => spawnReference.objectProbability);
+
+			//Get the location of the reference object to pick
+			float randomFloat = (float)randomClass.NextDouble();
+			float weightSelection = Mathf.Lerp(0.0f, totalWeight, randomFloat);
+
+			//Iterate through reference objects
+			for(int i = 0; i < spawnReferenceList.Length; i++)
+			{
+				var thisRef = spawnReferenceList[i];
+				if(weightSelection < thisRef.objectProbability)
+				{
+					return thisRef;
+				}
+
+				weightSelection -= thisRef.objectProbability;
+			}
+
+			//Fallback in case we hit the end
+			return spawnReferenceList[spawnReferenceList.Length - 1];
 		}
 	}
 }

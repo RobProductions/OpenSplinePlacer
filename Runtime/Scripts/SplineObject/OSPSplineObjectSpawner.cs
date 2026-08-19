@@ -83,14 +83,6 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 				return new List<GameObject>();
 			}
 
-			//Spawn the spline object
-			var spawnedObjects = SpawnSplineObject(splineObject, randomClass);
-			if (spawnedObjects.Count <= 0)
-			{
-				Debug.Log("OPSSplineObjectSpawner: No objects spawned on spline point: " + splineTimePoint);
-				return new List<GameObject>();
-			}
-
 			//Set the object start rotation
 			Quaternion startRotation = Quaternion.identity;
 			if(splineObject.placementParams.rotationSpace == OSPSplineObject.SplineObjectRotationSpace.LocalToHolderObject)
@@ -106,26 +98,18 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 			Quaternion finalRotation = startRotation * objectModificationRotation;
 			Vector3 finalPosition = splinePos;
 
-			//Set object rotation, position, and parent
-			Vector3 stackPositionDifference = Vector3.zero;
-			for (int i = 0; i < spawnedObjects.Count; i++)
+			//Spawn the spline object
+			var spawnedObjects = SpawnSplineObject(splineObject, finalPosition, finalRotation, randomClass);
+			if (spawnedObjects.Count <= 0)
 			{
-				GameObject thisObject = spawnedObjects[i];
+				Debug.Log("OPSSplineObjectSpawner: No objects spawned on spline point: " + splineTimePoint);
+				return new List<GameObject>();
+			}
 
-				if(i == 0)
-				{
-					//This is the base object
-					stackPositionDifference = finalPosition - thisObject.transform.position;
-					thisObject.transform.position = finalPosition;
-				}
-				else
-				{
-					//This is a stack object that should move relative with base
-					thisObject.transform.position += stackPositionDifference;
-				}
-
-				thisObject.transform.rotation = finalRotation;
-				thisObject.transform.SetParent(holderObject, false);
+			//Assign the parent to the spawned objects
+			foreach(GameObject spawnedObject in spawnedObjects)
+			{
+				spawnedObject.transform.SetParent(holderObject, false);
 			}
 
 			return spawnedObjects;
@@ -140,7 +124,7 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 		/// <param name="randomClass"></param>
 		/// <param name="placedObjectLengthOnSpline"></param>
 		/// <returns></returns>
-		public static List<GameObject> SpawnSplineObject(OSPSplineObject splineObject, System.Random randomClass)
+		public static List<GameObject> SpawnSplineObject(OSPSplineObject splineObject, Vector3 basePosition, Quaternion baseRotation, System.Random randomClass)
 		{
 			var ret = new List<GameObject>();
 
@@ -150,11 +134,28 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 				return ret;
 			}
 
+			//Define params
+			float stackHeightFromBase = 0.0f;
+
 			//Spawn the base object
-			ret.Add(SpawnReferenceObject(splineObject.spawningParams.baseSpawnReference));
+			ret.Add(SpawnReferenceObject(splineObject.spawningParams.baseSpawnReference, basePosition, baseRotation));
+			stackHeightFromBase += splineObject.spawningParams.baseSpawnReference.stackHeightFromOrigin;
 
 			//Spawn the stack objects
-			//TODO: This
+			if(splineObject.spawningParams.stackType != OSPSplineObject.SplineObjectStackType.None)
+			{
+				//Use a random number of stack objects
+				int stackCount = randomClass.Next(splineObject.spawningParams.stackCountRange.x, splineObject.spawningParams.stackCountRange.y + 1);
+				for(int i = 0; i < stackCount; i++)
+				{
+					var stackReferenceSelection = splineObject.GetRandomSpawnReference(splineObject.spawningParams.stackReferenceVariations, randomClass);
+
+					Vector3 newStackObjectPos = basePosition + (baseRotation * new Vector3(0f, stackHeightFromBase, 0f));
+					ret.Add(SpawnReferenceObject(stackReferenceSelection, newStackObjectPos, baseRotation));
+
+					stackHeightFromBase += stackReferenceSelection.stackHeightFromOrigin;
+				}
+			}
 
 			return ret;
 		}
@@ -165,16 +166,23 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 		/// </summary>
 		/// <param name="spawnReference"></param>
 		/// <returns></returns>
-		private static GameObject SpawnReferenceObject(OSPSplineObject.SplineObjectSpawnReference spawnReference)
+		private static GameObject SpawnReferenceObject(OSPSplineObject.SplineObjectSpawnReference spawnReference,
+			Vector3 objectPosition, Quaternion objectRotation)
 		{
 			GameObject ret;
 
+			//Spawn the object differently depending on Editor mode
+			//so we keep the Prefab link for future changes
 #if UNITY_EDITOR
 			ret = (GameObject)UnityEditor.PrefabUtility.InstantiatePrefab(spawnReference.prefabObject);
 			UnityEditor.Undo.RegisterCreatedObjectUndo(ret, "Created Spline Reference Object");
 #else
 			ret = GameObject.Instantiate(spawnReference.prefabObject);
 #endif
+
+			//Set transform values
+			ret.transform.position = objectPosition;
+			ret.transform.rotation = objectRotation;
 
 			return ret;
 		}
