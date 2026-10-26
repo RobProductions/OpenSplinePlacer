@@ -120,6 +120,10 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 			public float objectLengthZ = 10.0f;
 			public float objectLengthX = 10.0f;
 
+			[Header("Positioning")]
+			public Vector3 globalOffset = Vector3.zero;
+			public Vector3 localOffset = Vector3.zero;
+
 			[Header("Rotation")]
 			public SplineObjectRotationType rotationType = SplineObjectRotationType.DiscreteValues;
 			public SplineObjectRotationSpace rotationSpace = SplineObjectRotationSpace.LocalToSplineDirection;

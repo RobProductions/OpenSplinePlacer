@@ -249,7 +249,7 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 
 				//Then actually spawn the object at the traversal point on the spline
 				lastSpawnedObjects = OSPSplineObjectSpawner.SpawnSplineObjectOnSplinePoint(selectedContainer.splineObject, splineTarget, splineTimePoint,
-					transform, objectModificationRotation, randomClass, out Vector3 finalBaseObjectPosition);
+					transform, objectModificationRotation, randomClass);
 
 				//Increase raversal length for next container
 				objectsLengthTraverse += halfObjectLength;
