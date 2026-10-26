@@ -67,12 +67,8 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 		/// <param name="finalObjectLength"></param>
 		/// <returns></returns>
 		public static List<GameObject> SpawnSplineObjectOnSplinePoint(OSPSplineObject splineObject, Spline splineCurve, float splineTimePoint,
-			Transform holderObject, Quaternion objectModificationRotation, System.Random randomClass, 
-			out Vector3 finalBaseObjectPosition)
+			Transform holderObject, Quaternion objectModificationRotation, System.Random randomClass)
 		{
-			//Set up default values
-			finalBaseObjectPosition = Vector3.zero;
-
 			//Get the curve position and rotation
 			bool evaluateValid = splineCurve.Evaluate(splineTimePoint, out float3 localSplinePos, out float3 splineTangent, out float3 splineUpVector);
 			Quaternion curveForwardRotation = Quaternion.LookRotation(splineTangent, splineUpVector);
@@ -96,7 +92,8 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 
 			//Get the final transformation
 			Quaternion finalRotation = startRotation * objectModificationRotation;
-			Vector3 finalPosition = holderObject.TransformPoint(localSplinePos);
+			Vector3 finalPosition = holderObject.TransformPoint(localSplinePos) 
+				+ (splineObject.placementParams.globalOffset) + (finalRotation * splineObject.placementParams.localOffset);
 
 			//Spawn the spline object
 			var spawnedObjects = SpawnSplineObject(splineObject, finalPosition, finalRotation, randomClass);
