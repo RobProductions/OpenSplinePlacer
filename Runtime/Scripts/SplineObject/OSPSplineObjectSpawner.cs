@@ -69,13 +69,20 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 		public static List<GameObject> SpawnSplineObjectOnSplinePoint(OSPSplineObject splineObject, Spline splineCurve, float splineTimePoint,
 			Transform holderObject, Quaternion objectModificationRotation, System.Random randomClass)
 		{
+			//Null check the required holder object
+			if (holderObject == null)
+			{
+				Debug.Log("OPSSplineObjectSpawner: Holder object was null in SpawnSplineObjectOnSplinePoint()!");
+				return new List<GameObject>();
+			}
+
 			//Get the curve position and rotation
 			bool evaluateValid = splineCurve.Evaluate(splineTimePoint, out float3 localSplinePos, out float3 splineTangent, out float3 splineUpVector);
 			Quaternion curveForwardRotation = Quaternion.LookRotation(splineTangent, splineUpVector);
 
 			if(!evaluateValid)
 			{
-				Debug.Log("OPSSplineObjectSpawner: Spline Curve evaluation invalid in SpawnSplineObjectOnPoint()!");
+				Debug.Log("OPSSplineObjectSpawner: Spline Curve evaluation invalid in SpawnSplineObjectOnSplinePoint()!");
 				return new List<GameObject>();
 			}
 
@@ -90,8 +97,44 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 				startRotation = curveForwardRotation;
 			}
 
-			//Get the final transformation
-			Quaternion finalRotation = startRotation * objectModificationRotation;
+			//Determine the rotation with modification and global post-rotation resets
+			Quaternion globalModifiedRotation = startRotation * objectModificationRotation;
+			Vector3 globalModifiedRotationEuler = globalModifiedRotation.eulerAngles;
+			if(splineObject.placementParams.postRotationGlobalType.HasFlag(OSPSplineObject.SplineObjectPostRotationType.ResetXToValue))
+			{
+				globalModifiedRotationEuler.x = splineObject.placementParams.postRotationEulerSet.x;
+			}
+			if(splineObject.placementParams.postRotationGlobalType.HasFlag(OSPSplineObject.SplineObjectPostRotationType.ResetYToValue))
+			{
+				globalModifiedRotationEuler.y = splineObject.placementParams.postRotationEulerSet.y;
+			}
+			if(splineObject.placementParams.postRotationGlobalType.HasFlag(OSPSplineObject.SplineObjectPostRotationType.ResetZToValue))
+			{
+				globalModifiedRotationEuler.z = splineObject.placementParams.postRotationEulerSet.z;
+			}
+
+			//Convert to local space to do local resets
+			Quaternion localModifiedRotation = Quaternion.Inverse(holderObject.rotation) * Quaternion.Euler(globalModifiedRotationEuler);
+			Vector3 localModifiedRotationEuler = localModifiedRotation.eulerAngles;
+
+			if (splineObject.placementParams.postRotationLocalType.HasFlag(OSPSplineObject.SplineObjectPostRotationType.ResetXToValue))
+			{
+				localModifiedRotationEuler.x = splineObject.placementParams.postRotationEulerSet.x;
+			}
+			if(splineObject.placementParams.postRotationLocalType.HasFlag(OSPSplineObject.SplineObjectPostRotationType.ResetYToValue))
+			{
+				localModifiedRotationEuler.y = splineObject.placementParams.postRotationEulerSet.y;
+			}
+			if(splineObject.placementParams.postRotationLocalType.HasFlag(OSPSplineObject.SplineObjectPostRotationType.ResetZToValue))
+			{
+				localModifiedRotationEuler.z = splineObject.placementParams.postRotationEulerSet.z;
+			}
+			Quaternion finalPostRotation = holderObject.rotation * Quaternion.Euler(localModifiedRotationEuler);
+
+			//Determine final rotation from combination of post and original modified rotation
+			Quaternion finalRotation = Quaternion.Lerp(globalModifiedRotation, finalPostRotation, splineObject.placementParams.postRotationMatchAmount);
+
+			//Determine the final position
 			Vector3 finalPosition = holderObject.TransformPoint(localSplinePos) 
 				+ (splineObject.placementParams.globalOffset) + (finalRotation * splineObject.placementParams.localOffset);
 
@@ -111,7 +154,6 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 
 			return spawnedObjects;
 		}
-
 
 		/// <summary>
 		/// Spawn a SplineObject and stack references/top if needed.

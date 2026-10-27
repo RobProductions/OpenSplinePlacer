@@ -103,6 +103,15 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 			Global = 2,
 		}
 
+		[System.Flags]
+		public enum SplineObjectPostRotationType
+		{
+			None = 0,
+			ResetXToValue = 1 << 0,
+			ResetYToValue = 1 << 1,
+			ResetZToValue = 1 << 2,
+		}
+
 		[System.Serializable]
 		public class SplineObjectWeightedDiscreteRotation
 		{
@@ -132,6 +141,13 @@ namespace RobProductions.OpenSplinePlacer.Runtime
 			public Vector2 rotationXRange = new Vector2(0.0f, 360.0f);
 			public Vector2 rotationYRange = new Vector2(0.0f, 360.0f);
 			public Vector2 rotationZRange = new Vector2(0.0f, 360.0f);
+
+			[Header("Post Rotation")]
+			public SplineObjectPostRotationType postRotationGlobalType = SplineObjectPostRotationType.None;
+			public SplineObjectPostRotationType postRotationLocalType = SplineObjectPostRotationType.None;
+			public Vector3 postRotationEulerSet = Vector3.zero;
+			[Range(0f, 1f)]
+			public float postRotationMatchAmount = 1.0f;
 		}
 
 		public SplineObjectPlacementParams placementParams = new SplineObjectPlacementParams();
